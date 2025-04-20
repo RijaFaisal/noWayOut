@@ -1,6 +1,6 @@
 # GenAI-NoWayOut
 
-An intelligent API-powered application for processing refund requests, built with Node.js and the SupabaseAgent system. This application combines natural language processing, audio transcription, and image analysis to streamline refund processing workflows.
+An intelligent API-powered smart assistant that understands and manipulates a Supabase-hosted database and storage using natural language commands.Itcombines natural language processing, audio transcription, and image analysis to streamline refund processing workflows.
 
 ## Core Features
 
