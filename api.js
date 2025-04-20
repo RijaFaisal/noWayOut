@@ -1,11 +1,12 @@
+require('dotenv').config();
 const SupabaseAgent = require('./mySupAgent');
 const http = require('http');
 const url = require('url');
+const { createClient } = require('@supabase/supabase-js');
 
-// Initialize the agent
-const agent = new SupabaseAgent();
+let agent;
+let supabase;
 
-// Attempt to import the CLI helper functions from index.js if available
 let cliHelpers = {};
 try {
   const indexModule = require('./index.js');
@@ -26,157 +27,210 @@ try {
 
 // Create the API server
 const server = http.createServer(async (req, res) => {
-  // Set CORS headers
+  // Parse URL
+  const parsedUrl = url.parse(req.url, true);
+  const path = parsedUrl.pathname;
+  const trimmedPath = path.replace(/^\/+|\/+$/g, '');
+  
+  // Initialize agent if not already initialized
+  if (!agent) {
+    agent = new SupabaseAgent();
+  }
+  
+  console.log(`Request received on path: ${trimmedPath} with method: ${req.method}`);
+  
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   
-  // Handle preflight requests
   if (req.method === 'OPTIONS') {
     res.writeHead(200);
     res.end();
     return;
   }
   
-  // Only handle POST requests to /api/query
-  if (req.method === 'POST' && req.url === '/api/query') {
-    let body = '';
-    
-    req.on('data', chunk => {
-      body += chunk.toString();
-    });
-    
-    req.on('end', async () => {
+  try {
+    if (path === '/api/refund-requests' && req.method === 'GET') {
       try {
-        // Parse the request body
-        const { query } = JSON.parse(body);
-        
-        if (!query) {
-          res.writeHead(400, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ error: 'Query is required' }));
-          return;
+        if (!supabase) {
+          supabase = createClient(
+            process.env.SUPABASE_URL,
+            process.env.SUPABASE_ANON_KEY
+          );
         }
         
-        console.log(`Processing query: ${query}`);
-        
-        // Process the query using the existing agent functionality
-        const intent = await agent.determineQueryIntent(query);
-        let result;
-        
-        // Handle different intents based on the query
-        switch (intent.type) {
-          case 'database_query':
-            console.log('Executing database query:', query);
-            result = await agent.executeNaturalLanguageQuery(query);
-            // Log the result for debugging
-            console.log('Query result:', {
-              operationType: result.operationType,
-              table: result.table,
-              error: result.error ? result.error.message : null,
-              dataLength: result.data ? (Array.isArray(result.data) ? result.data.length : 'not array') : 'no data'
-            });
-            break;
-            
-          case 'receipt_processing':
-            console.log('Processing receipts with fileNames:', intent.fileNames);
-            // Always use the CLI method for processing receipts
-            try {
-              // Import the processReceiptImagesWithDelay method from index.js
-              console.log('Using direct method agent.processReceiptImagesWithDelay');
-              
-              // Use the same method that works in CLI
-              const delayMs = 2000; // Same delay used in CLI
-              const results = await agent.processReceiptImagesWithDelay(intent.fileNames, delayMs);
-              
-              console.log('Receipt processing results:', results);
-              
-              result = {
-                success: true,
-                message: `Processed ${intent.fileNames.length} receipt${intent.fileNames.length > 1 ? 's' : ''} successfully.`,
-                data: results
-              };
-            } catch (error) {
-              console.error('Error using direct receipt processing:', error);
-              result = {
-                success: false,
-                error: error.message,
-                message: 'Failed to process receipts'
-              };
-            }
-            break;
-            
-          case 'audio_processing':
-            // Try to use the CLI helper function if available
-            if (cliHelpers.handleAudioProcessing) {
-              console.log('Using CLI handleAudioProcessing function');
-              try {
-                await cliHelpers.handleAudioProcessing();
-                result = {
-                  success: true,
-                  message: 'Processed audio files successfully using CLI function'
-                };
-              } catch (error) {
-                console.error('Error using CLI audio processing:', error);
-                // Fall back to our implementation
-                result = await handleAudioProcessing();
-              }
-            } else {
-              result = await handleAudioProcessing();
-            }
-            break;
-            
-          case 'audio_summary':
-            // Try to use the CLI helper function if available
-            if (cliHelpers.handleAudioSummary) {
-              console.log('Using CLI handleAudioSummary function');
-              try {
-                await cliHelpers.handleAudioSummary();
-                result = {
-                  success: true,
-                  message: 'Retrieved audio summaries successfully using CLI function'
-                };
-              } catch (error) {
-                console.error('Error using CLI audio summary:', error);
-                // Fall back to our implementation
-                result = await handleAudioSummary();
-              }
-            } else {
-              result = await handleAudioSummary();
-            }
-            break;
-            
-          case 'receipt_url':
-            result = await handleReceiptUrl(intent.fileName);
-            break;
-            
-          default:
-            // Default to database query for any unhandled intents
-            result = await agent.executeNaturalLanguageQuery(query);
+        const { data, error } = await supabase
+          .from('refund_requests')
+          .select('*')
+          .order('id', { ascending: true });
+          
+        if (error) {
+          throw error;
         }
         
-        // Send the result back to the client
+        // Send back the complete data
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        const responseJSON = JSON.stringify({
-          ...result,
-          intent: intent.type // Include the detected intent in the response
-        });
-        res.end(responseJSON);
-        
-      } catch (error) {
-        console.error('Error processing query:', error);
-        
-        // Send error response
-        res.writeHead(500, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ 
-          error: error.message,
-          success: false
+        res.end(JSON.stringify({
+          success: true,
+          data: data
         }));
+        return;
+      } catch (error) {
+        console.error('Error fetching refund requests:', error);
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          success: false,
+          error: error.message || 'Failed to fetch refund requests'
+        }));
+        return;
       }
-    });
-  } else {
-    // Handle 404 for all other routes
-    res.writeHead(404, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Not found' }));
+    } else {
+      if (req.method === 'POST' && req.url === '/api/query') {
+        let body = '';
+        
+        req.on('data', chunk => {
+          body += chunk.toString();
+        });
+        
+        req.on('end', async () => {
+          try {
+            const { query } = JSON.parse(body);
+            
+            if (!query) {
+              res.writeHead(400, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: 'Query is required' }));
+              return;
+            }
+            
+            console.log(`Processing query: ${query}`);
+            
+            // Process the query using the existing agent functionality
+            const intent = await agent.determineQueryIntent(query);
+            let result;
+            
+            // Handle different intents based on the query
+            switch (intent.type) {
+              case 'database_query':
+                console.log('Executing database query:', query);
+                result = await agent.executeNaturalLanguageQuery(query);
+                // Log the result for debugging
+                console.log('Query result:', {
+                  operationType: result.operationType,
+                  table: result.table,
+                  error: result.error ? result.error.message : null,
+                  dataLength: result.data ? (Array.isArray(result.data) ? result.data.length : 'not array') : 'no data'
+                });
+                break;
+                
+              case 'receipt_processing':
+                console.log('Processing receipts with fileNames:', intent.fileNames);
+                // Always use the CLI method for processing receipts
+                try {
+                  // Import the processReceiptImagesWithDelay method from index.js
+                  console.log('Using direct method agent.processReceiptImagesWithDelay');
+                  
+                  // Use the same method that works in CLI
+                  const delayMs = 2000; // Same delay used in CLI
+                  const results = await agent.processReceiptImagesWithDelay(intent.fileNames, delayMs);
+                  
+                  console.log('Receipt processing results:', results);
+                  
+                  result = {
+                    success: true,
+                    message: `Processed ${intent.fileNames.length} receipt${intent.fileNames.length > 1 ? 's' : ''} successfully.`,
+                    data: results
+                  };
+                } catch (error) {
+                  console.error('Error using direct receipt processing:', error);
+                  result = {
+                    success: false,
+                    error: error.message,
+                    message: 'Failed to process receipts'
+                  };
+                }
+                break;
+                
+              case 'audio_processing':
+                // Try to use the CLI helper function if available
+                if (cliHelpers.handleAudioProcessing) {
+                  console.log('Using CLI handleAudioProcessing function');
+                  try {
+                    await cliHelpers.handleAudioProcessing();
+                    result = {
+                      success: true,
+                      message: 'Processed audio files successfully using CLI function'
+                    };
+                  } catch (error) {
+                    console.error('Error using CLI audio processing:', error);
+                    // Fall back to our implementation
+                    result = await handleAudioProcessing();
+                  }
+                } else {
+                  result = await handleAudioProcessing();
+                }
+                break;
+                
+              case 'audio_summary':
+                // Try to use the CLI helper function if available
+                if (cliHelpers.handleAudioSummary) {
+                  console.log('Using CLI handleAudioSummary function');
+                  try {
+                    await cliHelpers.handleAudioSummary();
+                    result = {
+                      success: true,
+                      message: 'Retrieved audio summaries successfully using CLI function'
+                    };
+                  } catch (error) {
+                    console.error('Error using CLI audio summary:', error);
+                    // Fall back to our implementation
+                    result = await handleAudioSummary();
+                  }
+                } else {
+                  result = await handleAudioSummary();
+                }
+                break;
+                
+              case 'receipt_url':
+                result = await handleReceiptUrl(intent.fileName);
+                break;
+                
+              default:
+                // Default to database query for any unhandled intents
+                result = await agent.executeNaturalLanguageQuery(query);
+            }
+            
+            // Send the result back to the client
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            const responseJSON = JSON.stringify({
+              ...result,
+              intent: intent.type // Include the detected intent in the response
+            });
+            res.end(responseJSON);
+            
+          } catch (error) {
+            console.error('Error processing query:', error);
+            
+            // Send error response
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ 
+              error: error.message,
+              success: false
+            }));
+          }
+        });
+      } else {
+        // Handle 404 for all other routes
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Not found' }));
+      }
+    }
+  } catch (error) {
+    console.error('Error processing request:', error);
+    res.writeHead(500, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({
+      success: false,
+      error: error.message || 'Failed to process request'
+    }));
   }
 });
 
