@@ -1,0 +1,1021 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supabaser - AI Assistant</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #3a2d5c, #2d3a5c, #2a5c52);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-size: 400% 400%;
+            animation: gradient 15s ease infinite;
+            overflow: hidden;
+        }
+        
+        @keyframes gradient {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+        
+        .main-container {
+            display: flex;
+            width: 95%;
+            height: 90vh;
+            gap: 20px;
+            max-width: 1600px;
+        }
+        
+        .left-panel {
+            background-color: rgba(45, 40, 70, 0.85);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            width: 40%;
+            max-width: 500px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .right-panel {
+            background-color: rgba(45, 40, 70, 0.75);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            flex-grow: 1;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .panel-header {
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(180, 152, 255, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .header-button {
+            background-color: rgba(180, 152, 255, 0.2);
+            border: none;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #b498ff;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .header-button:hover {
+            background-color: rgba(180, 152, 255, 0.4);
+        }
+        
+        h1 {
+            color: #d0c0ff;
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+        
+        h2 {
+            color: #c0b6ff;
+            font-size: 1.8rem;
+            font-weight: 600;
+        }
+        
+        .robot-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            color: #d0c0ff;
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0% {
+                transform: translateY(0px);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
+            100% {
+                transform: translateY(0px);
+            }
+        }
+        
+        .subtext {
+            color: #b5b5bd;
+            margin-bottom: 30px;
+            font-size: 1.1rem;
+        }
+        
+        .query-form {
+            position: relative;
+            margin-top: 20px;
+            flex-grow: 0;
+        }
+        
+        .query-input {
+            width: 100%;
+            padding: 15px 20px;
+            border: 2px solid #5a507a;
+            background-color: rgba(30, 30, 45, 0.6);
+            color: #e0e0e0;
+            border-radius: 50px;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.3s;
+        }
+        
+        .query-input::placeholder {
+            color: #9e9ea7;
+        }
+        
+        .query-input:focus {
+            border-color: #b498ff;
+            box-shadow: 0 0 0 3px rgba(180, 152, 255, 0.3);
+        }
+        
+        .submit-btn {
+            position: absolute;
+            right: 5px;
+            top: 5px;
+            background-color: #b498ff;
+            color: #20203a;
+            font-weight: 600;
+            border: none;
+            border-radius: 50px;
+            padding: 10px 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .submit-btn:hover {
+            background-color: #c9b6ff;
+            transform: translateX(-2px);
+        }
+        
+        .output-container {
+            flex-grow: 1;
+            overflow-y: auto;
+            position: relative;
+            padding: 20px 10px;
+            scrollbar-width: thin;
+            scrollbar-color: #5a507a rgba(30, 30, 45, 0.6);
+        }
+        
+        .output-container::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .output-container::-webkit-scrollbar-track {
+            background: rgba(30, 30, 45, 0.3);
+            border-radius: 10px;
+        }
+        
+        .output-container::-webkit-scrollbar-thumb {
+            background-color: #5a507a;
+            border-radius: 10px;
+        }
+        
+        .output-card {
+            background-color: rgba(60, 55, 95, 0.5);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            transform: translateX(100%);
+            opacity: 0;
+            animation: slideIn 0.5s forwards;
+            border-left: 4px solid #b498ff;
+            position: relative;
+        }
+        
+        .output-card.loading {
+            border-left-color: #ffd166;
+        }
+        
+        .output-card.error {
+            border-left-color: #ff6b6b;
+        }
+        
+        @keyframes slideIn {
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        .query-text {
+            color: #c0b6ff;
+            font-weight: 600;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+        }
+        
+        .command-prefix {
+            color: #b498ff;
+            font-weight: bold;
+            margin-right: 5px;
+        }
+        
+        .response-text {
+            color: #e0e0e0;
+            line-height: 1.6;
+            font-size: 1rem;
+        }
+        
+        .code-block {
+            background-color: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+            color: #a5e1ff;
+            border-left: 3px solid #5f9eeb;
+            overflow-x: auto;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .success-message {
+            color: #72f0b8;
+            font-weight: 500;
+            margin-top: 15px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .success-message::before {
+            content: "✅";
+            margin-right: 8px;
+        }
+        
+        .processing-message {
+            color: #f8d854;
+            margin-bottom: 10px;
+            font-style: italic;
+            display: flex;
+            align-items: center;
+        }
+        
+        .processing-message::before {
+            content: "";
+            width: 16px;
+            height: 16px;
+            margin-right: 8px;
+            border: 2px solid #f8d854;
+            border-radius: 50%;
+            border-right-color: transparent;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .timestamp {
+            color: #8a8593;
+            font-size: 0.8rem;
+            text-align: right;
+            margin-top: 10px;
+            font-style: italic;
+        }
+        
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #8a8593;
+            font-size: 1.2rem;
+            text-align: center;
+        }
+        
+        .empty-icon {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+        
+        .suggestions {
+            margin-top: 30px;
+            width: 100%;
+        }
+        
+        .suggestion-title {
+            color: #b5b5bd;
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+            text-align: left;
+        }
+        
+        .suggestion-items {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .suggestion-item {
+            background-color: rgba(60, 55, 95, 0.5);
+            border-radius: 8px;
+            padding: 10px 15px;
+            color: #c0b6ff;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.2s;
+            border: 1px solid rgba(180, 152, 255, 0.2);
+        }
+        
+        .suggestion-item:hover {
+            background-color: rgba(180, 152, 255, 0.2);
+            transform: translateY(-2px);
+        }
+        
+        .table-container {
+            margin-top: 15px;
+            overflow-x: auto;
+            border-radius: 8px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: rgba(40, 35, 65, 0.6);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        thead th {
+            padding: 12px 15px;
+            text-align: left;
+            background-color: rgba(25, 22, 40, 0.8);
+            color: #a5e1ff;
+            font-weight: 600;
+            border-bottom: 1px solid #444;
+        }
+        
+        tbody td {
+            padding: 12px 15px;
+            border-bottom: 1px solid rgba(80, 73, 124, 0.2);
+            color: #e0e0e0;
+        }
+        
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+        
+        tbody tr:hover {
+            background-color: rgba(180, 152, 255, 0.1);
+        }
+        
+        @media (max-width: 900px) {
+            .main-container {
+                flex-direction: column;
+                height: auto;
+                gap: 15px;
+            }
+            
+            .left-panel, .right-panel {
+                width: 100%;
+                max-width: 100%;
+                padding: 25px;
+            }
+            
+            .right-panel {
+                height: 60vh;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div class="left-panel">
+            <div class="robot-icon">🤖</div>
+            <h1>Welcome to Supabaser</h1>
+            <p class="subtext">Ask me anything...</p>
+            
+            <form class="query-form" id="queryForm">
+                <input type="text" class="query-input" id="queryInput" placeholder="Type your query here..." autocomplete="off">
+                <button type="submit" class="submit-btn">Ask</button>
+            </form>
+            
+            <div class="suggestions">
+                <p class="suggestion-title">Try these examples:</p>
+                <div class="suggestion-items">
+                    <div class="suggestion-item" data-query="Get all employees">Get all employees</div>
+                    <div class="suggestion-item" data-query="Add a new employee named Alex Smith, age 28, salary 65000">Add a new employee named Alex Smith</div>
+                    <div class="suggestion-item" data-query="Update row 1, make the salary 75000">Update row 1, make the salary 75000</div>
+                    <div class="suggestion-item" data-query="Get all the urls from the storage, the names are refund_req1.png through refund_req10.png">Process all receipt images</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="right-panel">
+            <div class="panel-header">
+                <h2>Response</h2>
+                <div class="header-actions">
+                    <button class="header-button" id="clearBtn" title="Clear all responses">🗑️</button>
+                    <button class="header-button" id="copyBtn" title="Copy to clipboard">📋</button>
+                </div>
+            </div>
+            <div class="output-container" id="outputContainer">
+                <div class="empty-state" id="emptyState">
+                    <div class="empty-icon">💫</div>
+                    <p>Your responses will appear here</p>
+                    <p style="font-size: 0.9rem; margin-top: 10px; opacity: 0.7;">Try asking about employees, processing receipts, or querying the database</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set up event listeners
+            document.getElementById('queryForm').addEventListener('submit', handleQuerySubmit);
+            document.getElementById('clearBtn').addEventListener('click', clearResponses);
+            document.getElementById('copyBtn').addEventListener('click', copyToClipboard);
+            
+            // Set up suggestion click handlers
+            document.querySelectorAll('.suggestion-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    const query = this.getAttribute('data-query');
+                    document.getElementById('queryInput').value = query;
+                    // Focus on input to show the user it's ready for editing if needed
+                    document.getElementById('queryInput').focus();
+                });
+            });
+        });
+        
+        function handleQuerySubmit(e) {
+            e.preventDefault();
+            const query = document.getElementById('queryInput').value;
+            if (query.trim() !== '') {
+                // Hide empty state if visible
+                document.getElementById('emptyState').style.display = 'none';
+                
+                // Process the query
+                processQuery(query);
+                
+                // Clear the input
+                document.getElementById('queryInput').value = '';
+            }
+        }
+        
+        function clearResponses() {
+            const outputContainer = document.getElementById('outputContainer');
+            // Remove all cards except the empty state
+            Array.from(outputContainer.children).forEach(child => {
+                if (!child.classList.contains('empty-state')) {
+                    outputContainer.removeChild(child);
+                }
+            });
+            // Show the empty state
+            document.getElementById('emptyState').style.display = 'flex';
+        }
+        
+        function copyToClipboard() {
+            const outputContainer = document.getElementById('outputContainer');
+            let text = '';
+            
+            // Collect text from all cards
+            Array.from(outputContainer.querySelectorAll('.output-card')).forEach(card => {
+                // Query text
+                const queryText = card.querySelector('.query-text')?.textContent || '';
+                text += queryText + '\n\n';
+                
+                // Code blocks
+                const codeBlocks = card.querySelectorAll('.code-block');
+                if (codeBlocks.length) {
+                    codeBlocks.forEach(block => {
+                        text += block.textContent + '\n\n';
+                    });
+                }
+                
+                // Success message
+                const successMsg = card.querySelector('.success-message')?.textContent || '';
+                if (successMsg) {
+                    text += successMsg + '\n\n';
+                }
+                
+                // Add separator
+                text += '----------------------------\n\n';
+            });
+            
+            // Copy to clipboard
+            navigator.clipboard.writeText(text).then(() => {
+                // Show toast notification
+                showToast('Copied to clipboard!');
+            }).catch(err => {
+                console.error('Error copying text: ', err);
+                showToast('Failed to copy to clipboard', true);
+            });
+        }
+        
+        function showToast(message, isError = false) {
+            // Create toast element
+            const toast = document.createElement('div');
+            toast.style.position = 'fixed';
+            toast.style.bottom = '20px';
+            toast.style.left = '50%';
+            toast.style.transform = 'translateX(-50%)';
+            toast.style.padding = '10px 20px';
+            toast.style.borderRadius = '50px';
+            toast.style.backgroundColor = isError ? 'rgba(255, 87, 87, 0.9)' : 'rgba(114, 240, 184, 0.9)';
+            toast.style.color = isError ? 'white' : '#20203a';
+            toast.style.fontWeight = '500';
+            toast.style.zIndex = '1000';
+            toast.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.2)';
+            toast.textContent = message;
+            
+            // Add to body
+            document.body.appendChild(toast);
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transition = 'opacity 0.5s ease';
+                setTimeout(() => {
+                    document.body.removeChild(toast);
+                }, 500);
+            }, 3000);
+        }
+        
+        async function processQuery(query) {
+            // Connect to the actual backend API
+            const outputContainer = document.getElementById('outputContainer');
+            
+            // Create output card
+            const card = document.createElement('div');
+            card.className = 'output-card loading';
+            
+            // Add query text with ">" prefix like a command line
+            const queryTextDiv = document.createElement('div');
+            queryTextDiv.className = 'query-text';
+            queryTextDiv.innerHTML = `<span class="command-prefix">&gt;</span> ${query}`;
+            card.appendChild(queryTextDiv);
+            
+            // Add processing message
+            const processingMsg = document.createElement('div');
+                    processingMsg.className = 'processing-message';
+            processingMsg.textContent = 'Processing your request...';
+            card.appendChild(processingMsg);
+            
+            // Add to container immediately to show processing state
+            outputContainer.appendChild(card);
+            
+            // Scroll to the new card
+            outputContainer.scrollTop = outputContainer.scrollHeight;
+            
+            try {
+                // Make the actual API call to our backend
+                const response = await fetch('/api/query', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ query }),
+                });
+                
+                const result = await response.json();
+                
+                // Remove the processing message
+                card.removeChild(processingMsg);
+                
+                // Remove loading class
+                card.classList.remove('loading');
+                
+                // Add error class if there's an error
+                if (result.error) {
+                    card.classList.add('error');
+                }
+                
+                // Add intent label to show what operation was performed
+                if (result.intent) {
+                    const intentLabel = document.createElement('div');
+                    intentLabel.style.fontSize = '0.8rem';
+                    intentLabel.style.color = '#b498ff';
+                    intentLabel.style.marginBottom = '10px';
+                    
+                    // Format the intent label nicely
+                    const formattedIntent = result.intent.replace(/_/g, ' ');
+                    intentLabel.textContent = `Operation: ${formattedIntent}`;
+                    card.appendChild(intentLabel);
+                }
+                
+                if (result.error) {
+                    // Show error message
+                    const errorMsg = document.createElement('div');
+                    errorMsg.style.color = '#ff7070';
+                    errorMsg.style.marginTop = '10px';
+                    errorMsg.innerHTML = `<span style="color: #ff5757;">❌</span> Error: ${result.error}`;
+                    card.appendChild(errorMsg);
+                    
+                    // Show the generated query if available
+                    if (result.generatedQuery) {
+                        const queryBlock = document.createElement('div');
+                        queryBlock.className = 'code-block';
+                        queryBlock.textContent = `AI generated Supabase query: ${result.generatedQuery}`;
+                        card.appendChild(queryBlock);
+                    }
+                } else {
+                    // Handle different operation types based on result.intent
+                    switch (result.intent) {
+                        case 'database_query':
+                            renderDatabaseQueryResult(card, result);
+                            break;
+                            
+                        case 'receipt_processing':
+                            renderReceiptProcessingResult(card, result);
+                            break;
+                            
+                        case 'audio_processing':
+                            renderAudioProcessingResult(card, result);
+                            break;
+                            
+                        case 'audio_summary':
+                            renderAudioSummaryResult(card, result);
+                            break;
+                            
+                        case 'receipt_url':
+                            renderReceiptUrlResult(card, result);
+                            break;
+                            
+                        default:
+                            renderGenericResult(card, result);
+                    }
+                }
+                
+                // Add timestamp
+                const timestamp = document.createElement('div');
+                timestamp.className = 'timestamp';
+                timestamp.textContent = new Date().toLocaleTimeString();
+                card.appendChild(timestamp);
+            } catch (error) {
+                // Remove the processing message
+                card.removeChild(processingMsg);
+                
+                // Remove loading class and add error class
+                card.classList.remove('loading');
+                card.classList.add('error');
+                
+                // Show error message
+                const errorDiv = document.createElement('div');
+                errorDiv.style.color = '#ff7070';
+                errorDiv.style.marginTop = '10px';
+                errorDiv.innerHTML = `<span style="color: #ff5757;">❌</span> Connection error: ${error.message}`;
+                card.appendChild(errorDiv);
+                
+                console.error('Error connecting to API:', error);
+                
+                // Add timestamp
+                const timestamp = document.createElement('div');
+                timestamp.className = 'timestamp';
+                timestamp.textContent = new Date().toLocaleTimeString();
+                card.appendChild(timestamp);
+            }
+            
+            // Update the scroll position
+            outputContainer.scrollTop = outputContainer.scrollHeight;
+        }
+        
+        function renderDatabaseQueryResult(card, result) {
+            // Show the generated query
+            if (result.generatedQuery) {
+                const queryBlock = document.createElement('div');
+                queryBlock.className = 'code-block';
+                queryBlock.textContent = `AI generated Supabase query: ${result.generatedQuery}`;
+                card.appendChild(queryBlock);
+            }
+            
+            // Show data if it's a select query with results
+            if (result.operationType === 'select' && result.data && result.data.length > 0) {
+                createDataTable(card, result.data);
+                
+                // Add record count
+                const recordCount = document.createElement('div');
+                recordCount.style.marginTop = '10px';
+                recordCount.style.color = '#a5e1ff';
+                recordCount.style.fontSize = '0.9rem';
+                recordCount.textContent = `Found ${result.data.length} record${result.data.length !== 1 ? 's' : ''}`;
+                card.appendChild(recordCount);
+            }
+            
+            // Add success message for non-select operations or empty select results
+            if (result.operationType !== 'select' || !result.data || result.data.length === 0) {
+                const successMsg = document.createElement('div');
+                successMsg.className = 'success-message';
+                
+                if (result.operationType === 'select' && (!result.data || result.data.length === 0)) {
+                    successMsg.textContent = 'No matching records found.';
+                } else if (result.operationType === 'insert') {
+                    successMsg.textContent = `Added new data to ${result.table} successfully.`;
+                } else if (result.operationType === 'update') {
+                    successMsg.textContent = `Updated the ${result.table} data successfully.`;
+                } else if (result.operationType === 'delete') {
+                    successMsg.textContent = `Removed data from ${result.table} successfully.`;
+                } else {
+                    successMsg.textContent = 'Operation completed successfully.';
+                }
+                
+                card.appendChild(successMsg);
+            }
+        }
+        
+        function renderReceiptProcessingResult(card, result) {
+            // Display receipt processing results
+            const receiptsMsg = document.createElement('div');
+            receiptsMsg.className = 'success-message';
+            receiptsMsg.textContent = result.message || 'Processed receipts successfully';
+            card.appendChild(receiptsMsg);
+            
+            // Add receipt data details if available
+            if (result.data && result.data.length > 0) {
+                // Create a table for receipts data
+                const receiptTable = document.createElement('table');
+                receiptTable.style.marginTop = '15px';
+                receiptTable.style.width = '100%';
+                
+                // Create table header
+                const thead = document.createElement('thead');
+                const headerRow = document.createElement('tr');
+                
+                const headers = ['Receipt', 'Total Amount', 'Status'];
+                headers.forEach(header => {
+                    const th = document.createElement('th');
+                    th.textContent = header;
+                    headerRow.appendChild(th);
+                });
+                
+                thead.appendChild(headerRow);
+                receiptTable.appendChild(thead);
+                
+                // Create table body
+                const tbody = document.createElement('tbody');
+                
+                result.data.forEach(receipt => {
+                    const row = document.createElement('tr');
+                    
+                    // Receipt name cell
+                    const nameCell = document.createElement('td');
+                    nameCell.textContent = receipt.fileName;
+                    row.appendChild(nameCell);
+                    
+                    // Total amount cell
+                    const amountCell = document.createElement('td');
+                    if (receipt.amount) {
+                        amountCell.textContent = `$${receipt.amount}`;
+                        amountCell.style.fontWeight = 'bold';
+                        amountCell.style.color = '#72f0b8';
+                    } else if (receipt.receiptData && receipt.receiptData.total) {
+                        amountCell.textContent = `$${receipt.receiptData.total}`;
+                        if (receipt.receiptData.total !== 99.99) {
+                            amountCell.style.fontWeight = 'bold';
+                            amountCell.style.color = '#72f0b8';
+                        }
+                    } else {
+                        amountCell.textContent = 'N/A';
+                        amountCell.style.color = '#888';
+                    }
+                    row.appendChild(amountCell);
+                    
+                    // Status cell
+                    const statusCell = document.createElement('td');
+                    if (receipt.error) {
+                        statusCell.textContent = '❌ Error';
+                        statusCell.style.color = '#ff7070';
+                        statusCell.title = receipt.error;
+                    } else if (receipt.success === true) {
+                        statusCell.textContent = '✅ Updated';
+                        statusCell.style.color = '#72f0b8';
+                    } else if (receipt.updateResult && receipt.updateResult.success) {
+                        statusCell.textContent = '✅ Updated';
+                        statusCell.style.color = '#72f0b8';
+                    } else {
+                        statusCell.textContent = '⚠️ Unknown';
+                        statusCell.style.color = '#ffbb33';
+                    }
+                    row.appendChild(statusCell);
+                    
+                    tbody.appendChild(row);
+                });
+                
+                receiptTable.appendChild(tbody);
+                
+                // Create container for table
+                const tableContainer = document.createElement('div');
+                tableContainer.className = 'table-container';
+                tableContainer.appendChild(receiptTable);
+                card.appendChild(tableContainer);
+                
+                // If we have raw data from any failures, show it as well
+                const errors = result.data.filter(item => item.error);
+                if (errors.length > 0) {
+                    const errorDetails = document.createElement('details');
+                    errorDetails.style.marginTop = '15px';
+                    
+                    const errorSummary = document.createElement('summary');
+                    errorSummary.textContent = `Show error details (${errors.length})`;
+                    errorSummary.style.color = '#ff7070';
+                    errorSummary.style.cursor = 'pointer';
+                    errorSummary.style.padding = '8px 0';
+                    
+                    const errorContent = document.createElement('div');
+                    errorContent.className = 'code-block';
+                    errorContent.style.color = '#ff7070';
+                    errorContent.textContent = errors.map(e => 
+                        `File: ${e.fileName}\nError: ${e.error}`
+                    ).join('\n\n');
+                    
+                    errorDetails.appendChild(errorSummary);
+                    errorDetails.appendChild(errorContent);
+                    card.appendChild(errorDetails);
+                }
+            }
+            
+            // If logs are available, show them
+            if (result.logs && result.logs.length > 0) {
+                const logsDetails = document.createElement('details');
+                logsDetails.style.marginTop = '15px';
+                logsDetails.style.color = '#b5b5bd';
+                
+                const logsSummary = document.createElement('summary');
+                logsSummary.textContent = 'Show processing logs';
+                logsSummary.style.cursor = 'pointer';
+                logsSummary.style.padding = '8px 0';
+                
+                const logsContent = document.createElement('div');
+                logsContent.className = 'code-block';
+                logsContent.textContent = result.logs.join('\n');
+                logsContent.style.fontSize = '12px';
+                
+                logsDetails.appendChild(logsSummary);
+                logsDetails.appendChild(logsContent);
+                card.appendChild(logsDetails);
+            }
+        }
+        
+        function renderAudioProcessingResult(card, result) {
+            // Display audio processing results
+            const audioMsg = document.createElement('div');
+            audioMsg.className = 'success-message';
+            audioMsg.textContent = result.message || 'Processed audio files successfully';
+            card.appendChild(audioMsg);
+            
+            // Add audio processing details if available
+            if (result.data && result.data.length > 0) {
+                const audioDetails = document.createElement('div');
+                audioDetails.className = 'code-block';
+                let audioText = 'Processed audio files:\n\n';
+                
+                result.data.forEach(audio => {
+                    audioText += `File: ${audio.fileName || 'Unknown'}\n`;
+                    if (audio.transcription) {
+                        audioText += `Transcription: ${audio.transcription.substring(0, 100)}...\n`;
+                    }
+                    audioText += '\n';
+                });
+                
+                audioDetails.textContent = audioText;
+                card.appendChild(audioDetails);
+            }
+        }
+        
+        function renderAudioSummaryResult(card, result) {
+            // Display audio summary results
+            const summaryMsg = document.createElement('div');
+            summaryMsg.className = 'success-message';
+            summaryMsg.textContent = result.message || 'Retrieved audio summaries successfully';
+            card.appendChild(summaryMsg);
+            
+            // Add summary details if available
+            if (result.data && result.data.length > 0) {
+                const summaryDetails = document.createElement('div');
+                summaryDetails.className = 'code-block';
+                let summaryText = 'Audio summaries:\n\n';
+                
+                result.data.forEach(summary => {
+                    summaryText += `File: ${summary.fileName || 'Unknown'}\n`;
+                    summaryText += `Summary: ${summary.summary || 'No summary available'}\n\n`;
+                });
+                
+                summaryDetails.textContent = summaryText;
+                card.appendChild(summaryDetails);
+            }
+        }
+        
+        function renderReceiptUrlResult(card, result) {
+            // Display receipt URL results
+            const urlMsg = document.createElement('div');
+            urlMsg.className = 'success-message';
+            urlMsg.textContent = result.message || 'Retrieved receipt URL successfully';
+            card.appendChild(urlMsg);
+            
+            // Add URL details if available
+            if (result.data && result.data.url) {
+                const urlDetails = document.createElement('div');
+                urlDetails.className = 'code-block';
+                urlDetails.textContent = `File: ${result.data.fileName}\nURL: ${result.data.url}`;
+                card.appendChild(urlDetails);
+            }
+        }
+        
+        function renderGenericResult(card, result) {
+            // Generic success message for any other operation
+            const genericMsg = document.createElement('div');
+            genericMsg.className = 'success-message';
+            genericMsg.textContent = result.message || 'Operation completed successfully';
+            card.appendChild(genericMsg);
+            
+            // Display data if available
+            if (result.data) {
+                const dataDetails = document.createElement('div');
+                dataDetails.className = 'code-block';
+                dataDetails.textContent = JSON.stringify(result.data, null, 2);
+                card.appendChild(dataDetails);
+            }
+        }
+        
+        // Helper function to create a data table
+        function createDataTable(container, data) {
+            const tableContainer = document.createElement('div');
+            tableContainer.className = 'table-container';
+            
+            // Create a data table display
+            const dataTable = document.createElement('table');
+            
+            // Create table header
+            const thead = document.createElement('thead');
+            const headerRow = document.createElement('tr');
+            
+            // Get column names from the first data item
+            const columns = Object.keys(data[0]);
+            columns.forEach(col => {
+                const th = document.createElement('th');
+                th.textContent = col;
+                headerRow.appendChild(th);
+            });
+            
+            thead.appendChild(headerRow);
+            dataTable.appendChild(thead);
+            
+            // Create table body with data
+            const tbody = document.createElement('tbody');
+            data.forEach(item => {
+                const row = document.createElement('tr');
+                columns.forEach(col => {
+                    const td = document.createElement('td');
+                    td.textContent = item[col] !== null ? item[col] : 'null';
+                    row.appendChild(td);
+                });
+                tbody.appendChild(row);
+            });
+            
+            dataTable.appendChild(tbody);
+            tableContainer.appendChild(dataTable);
+            container.appendChild(tableContainer);
+        }
+    </script>
+</body>
+</html> 

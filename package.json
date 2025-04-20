@@ -1,0 +1,56 @@
+{
+  "name": "genai-nowayout",
+  "version": "1.0.0",
+  "description": "AI-powered application for processing refund requests using OpenAI, Groq, and Gemini APIs",
+  "main": "index.js",
+  "scripts": {
+    "start": "node --no-deprecation index.js",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "test-image": "node test-imageUrl.js",
+    "query": "node --no-deprecation index.js",
+    "process-receipts": "node processReceipts.js",
+    "process-audio": "node --no-deprecation process_audio.js",
+    "process-refund-audio": "node --no-deprecation refund_audio_processor.js",
+    "setup-db": "node --no-deprecation setup_db.js",
+    "serve": "node serve.js",
+    "api": "node api.js"
+  },
+  "keywords": [
+    "ai",
+    "openai",
+    "groq",
+    "gemini",
+    "whisper",
+    "llama",
+    "transcription",
+    "refund",
+    "audio-processing",
+    "supabase"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@google/generative-ai": "^0.2.1",
+    "openai": "^4.28.0",
+    "langchain": "^0.0.151",
+    "@supabase/supabase-js": "^2.49.4",
+    "pg": "^8.14.1",
+    "axios": "^1.8.4",
+    "node-fetch": "^2.6.9",
+    "form-data": "^4.0.2",
+    "http-proxy": "^1.18.1",
+    "dotenv": "^16.5.0",
+    "punycode": "^2.3.1"
+  },
+  "overrides": {
+    "punycode": "^2.3.1"
+  },
+  "engines": {
+    "node": ">=14.0.0",
+    "npm": ">=6.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/GenAI-NoWayOut"
+  }
+}
